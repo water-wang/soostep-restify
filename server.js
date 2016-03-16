@@ -1,79 +1,52 @@
-// Required Modules
-var express    = require("express");
-var morgan     = require("morgan");
-var bodyParser = require("body-parser");
-var jwt        = require("jsonwebtoken");
-var mongoose   = require("mongoose");
-var app        = express();
+var restify     = require('restify');
+var jwt         = require('jsonwebtoken');
+var mongoose    = require('mongoose');
+var morgan      = require('morgan');
+var fileRotator = require('file-stream-rotator');
+var fs          = require('fs');
+var config      = require('config'); 
 
-var port = process.env.PORT || 3001;
-var User = require('./models/User');
+var User = require('./models/user');
  
-// Connect to DB
-mongoose.connect(process.env.MONGO_URL);
+// connect to db
+mongoose.connect(process.env.MONGO_URL || config.dbUri);
 
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
-app.use(morgan("dev"));
-app.use(function(req, res, next) {
+// initialize logger settings
+fs.existsSync(config.logDir) || fs.mkdirSync(logDir)
+
+var logStream = fileRotator.getStream({
+    date_format: 'YYYYMMDD',
+    filename: config.logDir + '/api-%DATE%.log',
+    frequency: 'daily',
+    verbose: false
+});
+
+var server = restify.createServer({
+    name: 'soostep-restify'
+});
+
+server.use(restify.acceptParser(server.acceptParser));
+server.use(restify.authorizationParser());
+server.use(restify.queryParser());
+server.use(restify.bodyParser());
+server.use(morgan('combined', {stream: logStream}));
+
+
+var services = {};
+services.users = require('./services/users');
+
+server.all('*', function (req, res, next) {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, PUT');
     res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With, content-type, Authorization');
     next();
 });
 
-app.post('/authenticate', function(req, res) {
-    User.findOne({email: req.body.email, password: req.body.password}, function(err, user) {
-        if (err) {
-            res.json({
-                type: false,
-                data: "Error occured: " + err
-            });
-        } else {
-            if (user) {
-               res.json({
-                    type: true,
-                    data: user,
-                    token: user.token
-                }); 
-            } else {
-                res.json({
-                    type: false,
-                    data: "Incorrect email/password"
-                });    
-            }
-        }
-    });
-});
+server.post('/signin', routes.users.login);
+server.get('/signout', jwt({secret: config.secretToken}), routes.user.logout);
 
-app.post('/signin', function(req, res) {
-    User.findOne({email: req.body.email, password: req.body.password}, function(err, user) {
-        if (err) {
-            res.json({
-                type: false,
-                data: "Error occured: " + err
-            });
-        } else {
-            if (user) {
-                res.json({
-                    type: false,
-                    data: "User already exists!"
-                });
-            } else {
-                var userModel = new User();
-                userModel.email = req.body.email;
-                userModel.password = req.body.password;
-                userModel.save(function(err, user) {
-                    user.token = jwt.sign(user, process.env.JWT_SECRET);
-                    user.save(function(err, user1) {
-                        res.json({
-                            type: true,
-                            data: user1,
-                            token: user1.token
-                        });
-                    });
-                })
-            }
-        }
-    });
+var port = config.port || 3001;
+
+server.listen(port, function () {
+    console.log('%s is listening localhost:%', server.name, config.port);
 });
