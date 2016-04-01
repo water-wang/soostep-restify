@@ -1,53 +1,63 @@
-//var config       = require('./config');
-var mongoose     = require('mongoose');
-var bcrypt       = require('bcrypt');
-var SALT_WORK_FACTOR = 10;
+var mongoose = require('mongoose');
+var bcrypt = require('bcrypt');
+var config = require('../config');
 
-// mongoose.connect(config.dbUri, {}, function (err, res) {
-//     if (err) {
-//         console.log('Connection refused to ' + config.dbUri);
-//         console.log(err);
-//     } else {
-//         console.log('Connection successful to ' + config.dbUri);
-//     }
-// });
+var UserSchema = new mongoose.Schema({
 
-var Schema = mongoose.Schema;
- 
-var User = new Schema({
-    username: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    mobile: { type: String, required: true, unique: true },
-    created: { type: Date, default: Date.now }
+    username: String,
+    
+    password: String,
+
+    appUserId: String,
+
+    mobile: String,
+
+    email: String,    
+
+    description: String,
+
+    role: [String],
+
+    enabled: { type: Boolean, default: false},
+
+    weChatId: { type: String, unique: true },
+
+    //微信
+    unifyuserid: { type: String, unique: true },
+
+    isDeleted: { type: Boolean, default: false},
+
+    lastLoginTime: Date,
+
+    createTime: { type: Date, default: Date.now},
+
+    activeTime: Date
 });
 
-User.pre('save', function (next) {
+UserSchema.index({ unifyuserid: 1 });
+
+UserSchema.index({ weChatId: 1 });
+
+UserSchema.pre('save', function (next) {
     var user = this;
     
-    if (!user.isModified('password')) {
-        return next();
-    }
-    
-    bcrypt.genSalt(SALT_WORK_FACTOR, function (err, salt) {
+    if (!user.isModified('password')) return next();
+       
+    bcrypt.genSalt(config.SALT_WORK_FACTOR, function (err, salt) {
         if (err) return next(err);
         
         bcrypt.hash(user.password, salt, function (err, hash) {
-            if(err) return next(err);
+            if (err) return next(err);
             user.password = hash;
-            
             next();
         });
     });
 });
 
-User.methods.comparePassword = function (password, cb) {
-    bcrypt.compare(password, this.password, function (err, isMatch) {
-        if (err) return cb(err);
-        
-        cb(isMatch);
-    });
+UserSchema.method.comparePasswordSync = function (password, cb) {
+    // use compare SYNC method.
+    var isMatch = bcrypt.compareSync(password, this.password);
+    return cb(isMatch);
 };
- 
-var userModel = mongoose.model('User', User);
 
-module.exports = userModel;
+module.exports = mongoose.model('User', UserSchema);

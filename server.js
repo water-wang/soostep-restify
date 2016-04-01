@@ -1,52 +1,66 @@
-var restify     = require('restify');
-var jwt         = require('jsonwebtoken');
-var mongoose    = require('mongoose');
-var morgan      = require('morgan');
-var fileRotator = require('file-stream-rotator');
-var fs          = require('fs');
-var config      = require('config'); 
+var config  = require('./config');
 
-var User = require('./models/user');
- 
-// connect to db
-mongoose.connect(process.env.MONGO_URL || config.dbUri);
-
-// initialize logger settings
-fs.existsSync(config.logDir) || fs.mkdirSync(logDir)
-
-var logStream = fileRotator.getStream({
-    date_format: 'YYYYMMDD',
-    filename: config.logDir + '/api-%DATE%.log',
-    frequency: 'daily',
-    verbose: false
+/** 
+ * single mode
+*/
+var server = require('./worker');
+server.listen(config.PORT, function () {
+    console.log('%s is listening localhost:%s', server.name, config.PORT);
 });
 
-var server = restify.createServer({
-    name: 'soostep-restify'
-});
+/**
+ * cluster mode
+ */
+//var cluster = require('cluster');
+// if (cluster.isMaster) {
+//     var cpus     = require('os').cpus();
+//     var workers  = {};
+//     var requests = {};
 
-server.use(restify.acceptParser(server.acceptParser));
-server.use(restify.authorizationParser());
-server.use(restify.queryParser());
-server.use(restify.bodyParser());
-server.use(morgan('combined', {stream: logStream}));
-
-
-var services = {};
-services.users = require('./services/users');
-
-server.all('*', function (req, res, next) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, PUT');
-    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With, content-type, Authorization');
-    next();
-});
-
-server.post('/signin', routes.users.login);
-server.get('/signout', jwt({secret: config.secretToken}), routes.user.logout);
-
-var port = config.port || 3001;
-
-server.listen(port, function () {
-    console.log('%s is listening localhost:%', server.name, config.port);
-});
+//     for (var i = 0; i < cpus.length; i++) {
+//         // child-process instance.
+//         workers[i] = cluster.fork();
+        
+//         (function (i) {
+//             // communicate between cluster and workers.
+//             workers[i].on('message', function (message) {
+//                 if (message.cmd == 'incrementRequestTotal') {
+//                     requests++;
+//                     for (var j = 0; j < cpus.length; j++) {
+//                         workers[j].send({
+//                             workerid: workers[j].id,
+//                             cmd: 'updateOfRequestTotal',
+//                             requests: requests
+//                         });                        
+//                     }
+//                 }
+//             });
+//         })(i);
+//     }
+    
+//     /** 
+//      * cluster events
+//     */
+//     cluster.on('fork', function (worker) {
+//         console.log('fork: worker %s, process id: %s', worker.id, worker.process.pid);
+//     });
+    
+//     cluster.on('online', function (worker) {
+//         console.log('online: worker %s, process id: %s', worker.id, worker.process.pid);
+//     });
+    
+//     cluster.on('exit', function (worker, code, signal) {
+//         console.log('Worker ' + worker.process.pid + ' died.');
+//         // when worker died, fork a new worker instance.
+//         var worker = cluster.fork();
+//     });
+    
+// } else {   
+//     /** 
+//      * worker process instance
+//     */
+//     var worker = require('./worker');
+//     worker.listen(config.PORT, function () {
+//         console.log('%s is listening localhost:%s', worker.name, config.PORT);
+//     });
+// }
