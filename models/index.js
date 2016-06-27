@@ -8,6 +8,7 @@ mongoose.connect(config.DB_CONNECTION, options, function (err, res) {
     if (err) {
         console.log('Connection refused to ' + config.DB_CONNECTION);
         console.log(err);
+        return;
     }
     
     console.log('Connection successful to ' + config.DB_CONNECTION);

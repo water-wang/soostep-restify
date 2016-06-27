@@ -33,9 +33,9 @@ server.use(restify.bodyParser());
 server.use(restify.CORS(config.CORS));
 server.use(morgan('combined', {stream: syslog}));
 server.use(session);
-server.use(router(routes)); //TODO: router problem need to be solved
+//server.use(router(routes)); //TODO: router problem need to be solved
 
-server.get('/', function (req, res) {
+server.get('/user', function (req, res) {
     console.log('hello world from process %s.', process.pid);
     bizlog.info('hello world to log.');
     res.end('hello world!');
@@ -57,10 +57,10 @@ process.on('uncaughtException', function (err) {
     process.exit(1);
 });
 
-process.on('SIGINT', function () {
-    console.log('got ctrl-c.');
-    server.close();
-});
+// process.on('SIGINT', function () {
+//     console.log('got ctrl-c.');
+//     server.close();
+// });
 
 process.on('exit', function (code) {
     console.log(code === 0 ? 'Exiting sucessful...' 
