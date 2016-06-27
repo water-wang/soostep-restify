@@ -91,7 +91,24 @@
         
         private void EnrichCourseDetailModel(LearningCourseDetailModel course)
         {
-            throw new NotImplementedException();
+            course.LastUpdateUser = CurrentUserUniqueId;
+
+            if (course.Status == (byte)ActionCategory.Publish)
+            {
+                for (int i = 0; i < course.Chapters.Count; i++)
+                {
+                    var chapter = course.Chapters[i];
+                    chapter.No = i + 1;
+                    chapter.LastUpdateUser = CurrentUserUniqueId;
+
+                    for (int j = 0; j < chapter.Files.Count; j++)
+                    {
+                        var file = chapter.Files[j];
+                        file.No = j + 1;
+                        file.LastUpdateUser = CurrentUserUniqueId;
+                    }
+                }
+            }
         }
 
         private string ValidateModelForCourse(LearningCourseDetailModel course)
