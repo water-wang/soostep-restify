@@ -1,0 +1,40 @@
+
+    <!-- 加载编辑器的容器 -->
+    <script id="container" name="content" type="text/plain">
+    </script>
+    <label>upload video:</label>
+    <input type="text" name="video" id="video" />
+<button type="button" onclick=" upVideo(); ">Video</button>
+    <button type="button" onclick="upFile(); ">File</button>
+
+
+    <!-- 配置文件 -->
+    <script type="text/javascript" src="ueditor.config.js"></script>
+    <!-- 编辑器源码文件 -->
+    <script type="text/javascript" src="ueditor.all.js"></script>
+    <!-- 实例化编辑器 -->
+    <script type="text/javascript">
+        var ue = UE.getEditor('container', {
+            autoHeightEnabled: false
+        });
+
+        ue.ready(function () {
+            ue.hide();
+            ue.addListener('afterInsertVideo', function (t, arg) {
+                $('#video').val(arg[0].url);
+            });
+        }); 
+
+        function upVideo() {
+            //debugger;
+            var myFiles = ue.getDialog('insertvideo');
+            myFiles.open();
+        }
+
+        function upFile() {
+            //debugger;
+            var myFiles = ue.getDialog('insertfile');
+            myFiles.open();
+        }
+
+    </script>
