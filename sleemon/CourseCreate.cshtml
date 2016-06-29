@@ -239,10 +239,19 @@ var videoDialog;
         videoDialog = ue.getDialog('insertvideo');
     });
 
-    function upFile() {
-        //debugger;
-        var myFiles = ue.getDialog('insertfile');
-        myFiles.open();
+    function bindVideoUploadListener(obj) {
+        //ue.removeListener('afterInsertVideo', uploadVideoEvent(obj));
+        if (obj) {
+            ue.addListener('afterInsertVideo', function (t, arg) {
+                obj.val(arg[0].url);
+            });
+        }
+    }
+
+    function uploadVideoEvent(obj) {
+        return function(t, arg) {
+            obj.val(arg[0].url);
+        };
     }
     
     $(document)
@@ -266,6 +275,7 @@ var videoDialog;
             .on('click',
                 '.uploadFile',
                 function() {
+                    bindVideoUploadListener($(this));
                     videoDialog.open();
                 });
 
@@ -376,3 +386,10 @@ var videoDialog;
                 });
         });
 </script>
+
+ueditor.all.min.js    
+c.commands.insertvideo={execCommand:function(b,d,e){d=utils.isArray(d)?d:[d];for(var f,g,h=[],i="tmpVedio",j=0,k=d.length;k>j;j++)g=d[j],f="upload"==e?"edui-upload-video video-js vjs-default-skin":"edui-faked-video",h.push(a(g.url,g.width||420,g.height||280,i+j,null,f,"image"));c.execCommand("inserthtml",h.join(""),!0);for(var l=this.selection.getRange(),j=0,k=d.length;k>j;j++){var m=this.document.getElementById("tmpVedio"+j);domUtils.removeAttributes(m,"id"),l.selectNode(m).select(),c.execCommand("imagefloat",d[j].align)}
+c.fireEvent("afterInsertVideo",d)}
+
+https://github.com/fex-team/ueditor/issues/2382
+http://my.oschina.net/u/1772416/blog/411747
