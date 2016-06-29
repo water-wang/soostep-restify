@@ -279,17 +279,20 @@ var videoDialog;
                             .siblings('.file')
                             .each(function(i) {
                                 $(this).children('.file_index')[0].innerText = '第' + (i + 1) + '节：';
-                                $(this)
-                                    .children()
-                                    .children('[name^=Chapters]')
-                                    .each(function() {
-                                        var start = $(this)[0].name.indexOf('Files[');
-                                        var end = $(this)[0].name.lastIndexOf(']');
-                                        $(this)[0].name = $(this)[0].name.substring(0, start) +
-                                            'Files[' +
-                                            i +
-                                            $(this)[0].name.substring(end);
-                                    });
+
+                                var node = $(this).children().children().children();
+                                [node, node.children()].forEach(function(item) {
+                                    item.children('[name^=Chapters]')
+                                        .each(function() {
+                                            var start = $(this)[0].name.indexOf('Files[');
+                                            var end = $(this)[0].name.lastIndexOf(']');
+                                            $(this)[0].name = $(this)[0].name.substring(0, start) +
+                                                'Files[' +
+                                                i +
+                                                $(this)[0].name.substring(end);
+                                        });
+                                });
+
                             });
 
                         var file = $(this).parent().parent()[0];
@@ -308,11 +311,11 @@ var videoDialog;
 
                         var i = $(this).siblings('.file').length;
                         $(this).prev().children('.file_index')[0].innerText = '第' + i + '节：';
-                        $(this)
-                            .prev()
-                            .children()
-                            .children('[name^=Chapters]')
-                            .each(function() {
+
+                        var node = $(this).prev().children().children().children();
+                        [node, node.children()].forEach(function(item) {
+                            item.children('[name^=Chapters]')
+                            .each(function () {
                                 var end = $(this)[0].name.lastIndexOf(']');
                                 $(this)[0].name = 'Chapters[' +
                                     (j - 1) +
@@ -320,6 +323,7 @@ var videoDialog;
                                     (i - 1) +
                                     $(this)[0].name.substring(end);
                             });
+                        });
                     });
 
             $('div.widget-main')
