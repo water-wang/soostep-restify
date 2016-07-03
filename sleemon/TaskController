@@ -1,0 +1,155 @@
+public class TaskController : CoreController
+    {
+        private readonly TaskModelClient _taskModelClient;
+
+        public TaskController(
+            [Dependency] UserModelClient userModelClient,
+            [Dependency] TaskModelClient taskModelClient)
+            : base(userModelClient)
+        {
+            this._taskModelClient = taskModelClient;
+        }
+
+        #region Task shared
+
+        [Authorization]
+        [HttpGet]
+        public ActionResult Index(TaskBasicInfoSearchContext condition)
+        {
+            condition.BelongTo = (int)TaskBelongTo.SingleTask;
+
+            int totalCount;
+            var tasks = this._taskModelClient.GetTaskBasicInfoList(condition, out totalCount);
+
+            return PartialView("TaskList", tasks);
+        }
+
+        [HttpPost, ValidateInput(false)]
+        public ActionResult CreateTask(TaskDetailsModel task)
+        {
+            var msg = "Save successful.";
+            var validation = ValidateModelForTask(task);
+            if (string.IsNullOrEmpty(validation))
+            {
+                EnrichTaskDetailModel(task);
+                var result = _taskModelClient.SaveTaskBasicInfo(task);
+                if (!result.IsSuccess)
+                {
+                    msg = result.Message;
+                }
+            }
+            else
+            {
+                msg = validation;
+            }
+
+            return new JsonResult() { Data = msg };
+        }
+        
+        [HttpPost, ValidateInput(false)]
+        public ActionResult DeleteTask(int id)
+        {
+            var msg = "Delete successful.";
+            var task = _taskModelClient.GetTaskDetailById(id);
+            if (task != null && task.TaskStatus == (byte)ActionCategory.Save &&
+                task.LastUpdateUser == CurrentUserUniqueId)
+            {
+                var result = _taskModelClient.DeleteDeleteTaskById(id);
+                if (!result.IsSuccess)
+                {
+                    msg = result.Message;
+                }
+            }
+            else
+            {
+                msg = @"Task info is not found.";
+            }
+
+            return new JsonResult() { Data = msg };
+        }
+
+        #endregion
+
+        #region Exam tasks
+
+        [Authorization]
+        [HttpGet]
+        public ActionResult ExamTaskDetail(int id)
+        {
+            var task = this._taskModelClient.GetTaskDetailById(id);
+
+            return PartialView("ExamTaskDetail", task);
+        }
+
+        [Authorization]
+        [HttpGet]
+        public ActionResult ExamTaskCreate(int id = 0)
+        {
+            var task = id == 0 ? new TaskDetailsModel() : _taskModelClient.GetTaskDetailById(id);
+            return PartialView("ExamTaskCreate", task);
+        }
+
+        #endregion
+
+        #region Learning tasks
+        
+        [Authorization]
+        [HttpGet]
+        public ActionResult LearningTaskDetail(int id)
+        {
+            var task = this._taskModelClient.GetTaskDetailById(id);
+
+            return PartialView("LearningTaskDetail", task);
+        }
+
+        [Authorization]
+        [HttpGet]
+        public ActionResult LearningTaskCreate(int id = 0)
+        {
+            var task = id == 0 ? new TaskDetailsModel() : _taskModelClient.GetTaskDetailById(id);
+            return PartialView("LearningTaskCreate", task);
+        }
+
+        #endregion
+
+        #region Questionnaire tasks
+
+        [Authorization]
+        [HttpGet]
+        public ActionResult QuestionnaireTaskDetail(int id)
+        {
+            var task = this._taskModelClient.GetTaskDetailById(id);
+
+            return PartialView("QuestionnaireTaskDetail", task);
+        }
+
+        [Authorization]
+        [HttpGet]
+        public ActionResult QuestionnaireTaskCreate(int id = 0)
+        {
+            var task = id == 0 ? new TaskDetailsModel() : _taskModelClient.GetTaskDetailById(id);
+            return PartialView("QuestionnaireTaskCreate", task);
+        }
+        
+        #endregion
+
+        
+
+        private void EnrichTaskDetailModel(TaskDetailsModel task)
+        {
+            //task.LastUpdateUser = CurrentUserUniqueId;
+            task.BelongTo = (int)TaskBelongTo.SingleTask;
+
+            if (task.TaskStatus == (byte)ActionCategory.Publish)
+            {
+                task.DispatchSubject = task.Title;
+                task.DispatchType = (byte)MsgDispatchType.Immediate;
+                task.DispatchPriority = 1;
+            }
+        }
+
+        private string ValidateModelForTask(TaskDetailsModel task)
+        {
+            return string.Empty;
+        }
+    }
