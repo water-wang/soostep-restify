@@ -14,12 +14,11 @@ public class TaskController : CoreController
 
         [Authorization]
         [HttpGet]
-        public ActionResult Index(TaskBasicInfoSearchContext condition)
+        public ActionResult Index(TaskSearchContext condition)
         {
             condition.BelongTo = (int)TaskBelongTo.SingleTask;
 
-            int totalCount;
-            var tasks = this._taskModelClient.GetTaskBasicInfoList(condition, out totalCount);
+            var tasks = this._taskModelClient.GetTaskList(condition);
 
             return PartialView("TaskList", tasks);
         }
@@ -32,7 +31,7 @@ public class TaskController : CoreController
             if (string.IsNullOrEmpty(validation))
             {
                 EnrichTaskDetailModel(task);
-                var result = _taskModelClient.SaveTaskBasicInfo(task);
+                var result = _taskModelClient.SaveTaskDetail(task);
                 if (!result.IsSuccess)
                 {
                     msg = result.Message;
@@ -51,10 +50,10 @@ public class TaskController : CoreController
         {
             var msg = "Delete successful.";
             var task = _taskModelClient.GetTaskDetailById(id);
-            if (task != null && task.TaskStatus == (byte)ActionCategory.Save &&
+            if (task != null && task.Status == (byte)ActionCategory.Save &&
                 task.LastUpdateUser == CurrentUserUniqueId)
             {
-                var result = _taskModelClient.DeleteDeleteTaskById(id);
+                var result = _taskModelClient.DeleteTaskById(id);
                 if (!result.IsSuccess)
                 {
                     msg = result.Message;
@@ -132,15 +131,13 @@ public class TaskController : CoreController
         }
         
         #endregion
-
         
-
         private void EnrichTaskDetailModel(TaskDetailsModel task)
         {
             //task.LastUpdateUser = CurrentUserUniqueId;
             task.BelongTo = (int)TaskBelongTo.SingleTask;
 
-            if (task.TaskStatus == (byte)ActionCategory.Publish)
+            if (task.Status == (byte)ActionCategory.Publish)
             {
                 task.DispatchSubject = task.Title;
                 task.DispatchType = (byte)MsgDispatchType.Immediate;
